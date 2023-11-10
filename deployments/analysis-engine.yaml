@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keti-analysis-engine
+  namespace: gpu
+spec:
+  selector:
+    matchLabels:
+      name: analysis-engine
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: analysis-engine
+    spec:
+      nodeName: c1-master
+      serviceAccountName: analysis-engine
+      imagePullSecrets: 
+      - name: regcred
+      restartPolicy: Always
+      containers:
+      - name: analysis-engine
+        image: ketidevit2/keti-analysis-engine:v1.0
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName

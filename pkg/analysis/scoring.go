@@ -1,10 +1,12 @@
 package analysis
 
-import "analysis-engine/pkg/api/metric"
+import (
+	"analysis-engine/pkg/api/score"
+)
 
 type AnalysisInterface interface {
-	RunNodeScoringPlugins(scores map[string]*Score, multi_metric *metric.MultiMetric)
-	RunGPUScoringPlugins(scores map[string]*Score, multi_metric *metric.MultiMetric)
+	RunNodeScoringPlugins(analysisScore *score.AnalysisScore, metricCache *MetricCache)
+	RunGPUScoringPlugins(analysisScore *score.AnalysisScore, metricCache *MetricCache)
 }
 
 type AnalysisFramework struct {
@@ -13,19 +15,14 @@ type AnalysisFramework struct {
 }
 
 type ScoringPlugin interface {
-	Scoring(scores map[string]*Score, multi_metric *metric.MultiMetric)
-}
-
-type Score struct {
-	NodeScore float32
-	GPUScores map[string]float32
+	Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache)
 }
 
 func GetAnalysisFramework() AnalysisInterface {
 	return &AnalysisFramework{
 		NodeScoring: []ScoringPlugin{
-			// NodeCPUCore{},
-			// NodeMemory{},
+			NodeCPUCore{},
+			NodeMemory{},
 			// NodeStorage{},
 		},
 		GPUScoring: []ScoringPlugin{
@@ -41,15 +38,15 @@ func GetAnalysisFramework() AnalysisInterface {
 	}
 }
 
-func (af AnalysisFramework) RunNodeScoringPlugins(scores map[string]*Score, multi_metric *metric.MultiMetric) {
+func (af AnalysisFramework) RunNodeScoringPlugins(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
 	for _, afn := range af.NodeScoring {
-		afn.Scoring(scores, multi_metric)
+		afn.Scoring(analysisScore, metricCache)
 	}
 }
 
-func (af AnalysisFramework) RunGPUScoringPlugins(scores map[string]*Score, multi_metric *metric.MultiMetric) {
+func (af AnalysisFramework) RunGPUScoringPlugins(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
 	for _, afg := range af.GPUScoring {
-		afg.Scoring(scores, multi_metric)
+		afg.Scoring(analysisScore, metricCache)
 	}
 }
 
@@ -57,14 +54,23 @@ type NodeCPUCore struct{}
 type NodeMemory struct{}
 type NodeStorage struct{}
 
-func (s NodeCPUCore) Scoring(scores map[string]*Score, multi_metric *metric.MultiMetric) {
-
+func (s NodeCPUCore) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
+	for nodeName, multiMetric := range metricCache.MultiMetrics {
+		nodeScore := float32(multiMetric.NodeMetric.MemoryFree) / float32(multiMetric.NodeMetric.MemoryTotal) * 100
+		analysisScore.Scores[nodeName].NodeScore += nodeScore
+	}
 }
-func (s NodeMemory) Scoring(scores map[string]*Score, multi_metric *metric.MultiMetric) {
-
+func (s NodeMemory) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
+	for nodeName, multiMetric := range metricCache.MultiMetrics {
+		nodeScore := float32(multiMetric.NodeMetric.MilliCpuFree) / float32(multiMetric.NodeMetric.MilliCpuTotal) * 100
+		analysisScore.Scores[nodeName].NodeScore += nodeScore
+	}
 }
-func (s NodeStorage) Scoring(scores map[string]*Score, multi_metric *metric.MultiMetric) {
-
+func (s NodeStorage) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
+	for nodeName, multiMetric := range metricCache.MultiMetrics {
+		nodeScore := float32(multiMetric.NodeMetric.StorageFree) / float32(multiMetric.NodeMetric.StprageTotal) * 100
+		analysisScore.Scores[nodeName].NodeScore += nodeScore
+	}
 }
 
 type GPUFlops struct{}
@@ -77,41 +83,41 @@ type GPUBandwidth struct{}
 type GPUDirectStorage struct{}
 type GPUProcessTypeBalance struct{}
 
-func (s GPUFlops) Scoring(scores map[string]*Score, multi_metric *metric.MultiMetric) {
+func (s GPUFlops) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
 
 }
-func (s GPUPodCount) Scoring(scores map[string]*Score, multi_metric *metric.MultiMetric) {
+func (s GPUPodCount) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
 
 }
-func (s GPUUtilization) Scoring(scores map[string]*Score, multi_metric *metric.MultiMetric) {
+func (s GPUUtilization) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
 
 }
-func (s GPUMemory) Scoring(scores map[string]*Score, multi_metric *metric.MultiMetric) {
+func (s GPUMemory) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
 
 }
-func (s GPUTemperature) Scoring(scores map[string]*Score, multi_metric *metric.MultiMetric) {
+func (s GPUTemperature) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
 
 }
-func (s GPUPower) Scoring(scores map[string]*Score, multi_metric *metric.MultiMetric) {
+func (s GPUPower) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
 	var total_gpu_power = float32(0.0)
-	for _, node_metric := range multi_metric.NodeMetrics {
-		for _, gpu_metric := range node_metric.GpuMetrics {
-			total_gpu_power += gpu_metric.GpuPower
+	for _, multiMetric := range metricCache.MultiMetrics {
+		for _, gpu_metric := range multiMetric.GpuMetrics {
+			total_gpu_power += float32(gpu_metric.PowerUsed)
 		}
 	}
 
-	for node_name, node_metric := range multi_metric.NodeMetrics {
-		for gpu_name, gpu_metric := range node_metric.GpuMetrics {
-			scores[node_name].GPUScores[gpu_name] = total_gpu_power / gpu_metric.GpuPower
+	for nodeName, multiMetric := range metricCache.MultiMetrics {
+		for gpuName, gpu_metric := range multiMetric.GpuMetrics {
+			analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore += total_gpu_power / float32(gpu_metric.PowerUsed)
 		}
 	}
 }
-func (s GPUBandwidth) Scoring(scores map[string]*Score, multi_metric *metric.MultiMetric) {
+func (s GPUBandwidth) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
 
 }
-func (s GPUDirectStorage) Scoring(scores map[string]*Score, multi_metric *metric.MultiMetric) {
+func (s GPUDirectStorage) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
 
 }
-func (s GPUProcessTypeBalance) Scoring(scores map[string]*Score, multi_metric *metric.MultiMetric) {
+func (s GPUProcessTypeBalance) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
 
 }

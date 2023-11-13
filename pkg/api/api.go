@@ -4,6 +4,7 @@ import (
 	"analysis-engine/pkg/api/k8s"
 	"analysis-engine/pkg/api/metric"
 	"context"
+	"fmt"
 	"time"
 
 	"google.golang.org/grpc"
@@ -44,6 +45,8 @@ func GetMultiMetric(ip string) (*metric.MultiMetric, error) {
 	}
 
 	cancel()
+
+	fmt.Println(res)
 
 	return res, nil
 }

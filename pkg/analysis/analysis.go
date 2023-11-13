@@ -6,6 +6,9 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"google.golang.org/grpc"
 	"k8s.io/klog/v2"
@@ -13,23 +16,27 @@ import (
 
 type Engine struct {
 	score.UnimplementedMetricGRPCServer
-	Client   *api.ClientManager
-	Analysis AnalysisInterface
-	MasterIP string
-	// NodeScore     map[string]float32
-	// DeploymentMap map[string]bool
+	Client                   *api.ClientManager
+	Analysis                 AnalysisInterface
+	GPUMetricCollectorIPList []string
 }
 
 func InitEngine() *Engine {
 	client := api.NewClientManager()
-	ip := "10.0.5.20"
+
+	gpuMetricCollectorIPList := make([]string, 0)
+	pods, _ := client.KubeClient.CoreV1().Pods("gpu").List(context.TODO(), metav1.ListOptions{})
+	for _, pod := range pods.Items {
+		if strings.HasPrefix(pod.Name, "keti-gpu-metric-collector") && pod.Status.Phase == "Running" {
+			internalIP := pod.Status.PodIP
+			gpuMetricCollectorIPList = append(gpuMetricCollectorIPList, internalIP)
+		}
+	}
 
 	return &Engine{
-		Client:   client,
-		Analysis: GetAnalysisFramework(),
-		MasterIP: ip,
-		// NodeScore:     make(map[string]float32),
-		// DeploymentMap: make(map[string]bool),
+		Client:                   client,
+		Analysis:                 GetAnalysisFramework(),
+		GPUMetricCollectorIPList: gpuMetricCollectorIPList,
 	}
 }
 
@@ -37,81 +44,70 @@ func (e *Engine) Work() {
 	e.StartGRPCServer()
 }
 
-func (e *Engine) RunMetricAnalyzer() (map[string]*Score, error) {
-	multi_metric, err := api.GetMultiMetric(e.MasterIP)
+func (e *Engine) RunMetricAnalyzer() (*score.AnalysisScore, error) {
+	KETI_LOG_L2("[analysis] run metric analyzer")
+
+	metricCache, err := e.GetMetricCache()
 	if err != nil {
-		return nil, fmt.Errorf("metric collector gRPC error: %s", err)
+		return nil, fmt.Errorf("get multi metric error: %s", err)
 	}
 
-	scores := make(map[string]*Score)
-	for node_name, node_metric := range multi_metric.NodeMetrics {
-		score := &Score{
+	KETI_LOG_L2("[analysis] get multi metric sucess")
+
+	metricCache.DumpMetricCache() //테스트용
+
+	analysisScores := &score.AnalysisScore{
+		Scores: make(map[string]*score.NodeScore),
+	}
+
+	for nodeName, multiMetric := range metricCache.MultiMetrics {
+		nodeScore := &score.NodeScore{
 			NodeScore: 0.0,
-			GPUScores: make(map[string]float32),
+			GpuScores: make(map[string]*score.GPUScore),
 		}
-		for gpu_name, _ := range node_metric.GpuMetrics {
-			score.GPUScores[gpu_name] = 0.0
+		for gpuUUID := range multiMetric.GpuMetrics {
+			nodeScore.GpuScores[gpuUUID] = &score.GPUScore{
+				GpuScore: 0.0,
+			}
 		}
-		scores[node_name] = score
+		analysisScores.Scores[nodeName] = nodeScore
 	}
 
-	e.Analysis.RunNodeScoringPlugins(scores, multi_metric)
-	e.Analysis.RunGPUScoringPlugins(scores, multi_metric)
+	e.Analysis.RunNodeScoringPlugins(analysisScores, metricCache)
+	e.Analysis.RunGPUScoringPlugins(analysisScores, metricCache)
 
-	return scores, nil
+	KETI_LOG_L2("[analysis] finish scoring")
+
+	DumpScore(analysisScores) //DEBUGG LEVEL = 1 일때 출력
+
+	return analysisScores, nil
 }
 
-func (e *Engine) GetScore(context.Context, *score.Request) (*score.Response, error) {
-	scores, err := e.RunMetricAnalyzer()
+func (e *Engine) GetMetricCache() (*MetricCache, error) {
+	metricCache := NewMetricCache()
+
+	for _, ip := range e.GPUMetricCollectorIPList {
+		multiMetric_, err := api.GetMultiMetric(ip)
+		if err != nil {
+			return nil, fmt.Errorf("metric collector gRPC error: %s", err)
+		}
+
+		nodeName := multiMetric_.NodeName
+		metricCache.MultiMetrics[nodeName] = multiMetric_
+	}
+
+	return metricCache, nil
+}
+
+func (e *Engine) GetScore(context.Context, *score.Request) (*score.AnalysisScore, error) {
+	KETI_LOG_L3("[gRPC] called get score")
+
+	analysisScores, err := e.RunMetricAnalyzer()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &score.Response{
-		Message: make(map[string]*score.Score),
-	}
-
-	for node_name, node_score := range scores {
-		ns := &score.Score{
-			Nodescore: node_score.NodeScore,
-			Gpuscore:  make(map[string]float32),
-		}
-		for gpu_name, gpu_score := range node_score.GPUScores {
-			ns.Gpuscore[gpu_name] = gpu_score
-		}
-		response.Message[node_name] = ns
-	}
-
-	sc1 := &score.Score{
-		Nodescore: 50,
-		Gpuscore:  make(map[string]float32),
-	}
-	response.Message["c1-master"] = sc1
-
-	sc2 := &score.Score{
-		Nodescore: 52,
-		Gpuscore:  make(map[string]float32),
-	}
-	response.Message["cpu-node1"] = sc2
-
-	sc3 := &score.Score{
-		Nodescore: 60,
-		Gpuscore:  make(map[string]float32),
-	}
-	sc3.Gpuscore["GPU-de67e9b5-fd88-d5b3-133f-8c839735ab87"] = 37.0
-	response.Message["gpu-node1"] = sc3
-
-	sc4 := &score.Score{
-		Nodescore: 30,
-		Gpuscore:  make(map[string]float32),
-	}
-	sc4.Gpuscore["GPU-476b21ae-61f7-8fe1-fc92-a8e15c6ee0bc"] = 40.0
-	response.Message["gpu-node2"] = sc4
-
-	fmt.Println(response)
-	fmt.Println("# Analysis score transmission completed")
-
-	return response, nil
+	return analysisScores, nil
 }
 
 func (e *Engine) StartGRPCServer() {
@@ -121,7 +117,7 @@ func (e *Engine) StartGRPCServer() {
 	}
 	scoreServer := grpc.NewServer()
 	score.RegisterMetricGRPCServer(scoreServer, e)
-	fmt.Println("-----:: Analysis Engine Server Running... ::-----")
+	KETI_LOG_L3("[gRPC] analysis engine server running...")
 	if err := scoreServer.Serve(lis); err != nil {
 		klog.Fatalf("failed to serve: %v", err)
 	}

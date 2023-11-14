@@ -8,9 +8,15 @@ metadata:
 spec:
   type: NodePort
   ports:
-  - port: 9322
+  - name: grpc
+    port: 9322
     targetPort: 9322
     nodePort: 32552
+    protocol: TCP
+  - name: http
+    port: 9595
+    targetPort: 9595
+    nodePort: 32555
     protocol: TCP
   selector:
     name: analysis-engine

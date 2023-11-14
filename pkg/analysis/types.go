@@ -42,7 +42,7 @@ func (m *MetricCache) DumpMetricCache() {
 		KETI_LOG_L1("2. [Node Metric]")
 		KETI_LOG_L1(fmt.Sprintf("2-1. milli cpu (free/total) : %d/%d", multiMetric.NodeMetric.MilliCpuFree, multiMetric.NodeMetric.MilliCpuTotal))
 		KETI_LOG_L1(fmt.Sprintf("2-2. memory (free/total) : %d/%d", multiMetric.NodeMetric.MemoryFree, multiMetric.NodeMetric.MemoryTotal))
-		KETI_LOG_L1(fmt.Sprintf("2-3. storage (free/total) : %d/%d", multiMetric.NodeMetric.StorageFree, multiMetric.NodeMetric.StprageTotal))
+		KETI_LOG_L1(fmt.Sprintf("2-3. storage (free/total) : %d/%d", multiMetric.NodeMetric.StorageFree, multiMetric.NodeMetric.StorageTotal))
 		KETI_LOG_L1(fmt.Sprintf("2-4. network (rx/tx) : %d/%d", multiMetric.NodeMetric.NetworkRx, multiMetric.NodeMetric.NetworkTx))
 
 		KETI_LOG_L1("3. [GPU Metric]")
@@ -78,6 +78,47 @@ func (m *MetricCache) DumpMetricCache() {
 		}
 	}
 	KETI_LOG_L1("-----------------------------------\n")
+}
+
+func (m *MetricCache) DumpMultiMetricForTest() {
+	fmt.Println("\n---:: KETI GPU Metric Collector Status ::---")
+
+	for _, multiMetric := range m.MultiMetrics {
+		fmt.Println("# Node Name : ", multiMetric.NodeName)
+		fmt.Println("[Metric #01] node milli cpu (free/total) : ", multiMetric.NodeMetric.MilliCpuFree, "/", multiMetric.NodeMetric.MilliCpuTotal)
+		fmt.Println("[Metric #02] node memory (free/total) : ", multiMetric.NodeMetric.MemoryFree, "/", multiMetric.NodeMetric.MemoryTotal)
+		fmt.Println("[Metric #03] node storage (free/total) : ", multiMetric.NodeMetric.StorageFree, "/", multiMetric.NodeMetric.StorageTotal)
+		fmt.Println("[Metric #04] node network rx : ", multiMetric.NodeMetric.NetworkRx)
+		fmt.Println("[Metric #05] node network tx : ", multiMetric.NodeMetric.NetworkTx)
+
+		if len(multiMetric.NvlinkInfo) != 0 {
+			fmt.Println("[Metric #06] gpu nvlink connected : true")
+			for _, nvlink := range multiMetric.NvlinkInfo {
+				fmt.Println(">>> ", nvlink.Gpu1Uuid, ":", nvlink.Gpu2Uuid, " lane: ", nvlink.Lanecount)
+			}
+		} else {
+			fmt.Println("[Metric #06] gpu nvlink connected : false")
+		}
+
+		for gpuName, gpuMetric := range multiMetric.GpuMetrics {
+			fmt.Println("# GPU UUID : ", gpuName)
+			fmt.Println("[Metric #07] gpu name : ", gpuMetric.GpuName)
+			fmt.Println("[Metric #08] gpu architecture : ", gpuMetric.Architecture)
+			fmt.Println("[Metric #09] gpu max clock : ", gpuMetric.MaxClock)
+			fmt.Println("[Metric #10] gpu cudacore : ", gpuMetric.Cudacore)
+			fmt.Println("[Metric #11] gpu bandwidth : ", gpuMetric.Bandwidth)
+			fmt.Println("[Metric #12] gpu flops : ", gpuMetric.Flops)
+			fmt.Println("[Metric #13] gpu max operative temperature : ", gpuMetric.MaxOperativeTemp)
+			fmt.Println("[Metric #14] gpu slow down temperature : ", gpuMetric.SlowdownTemp)
+			fmt.Println("[Metric #15] gpu shut dowm temperature : ", gpuMetric.ShutdownTemp)
+			fmt.Println("[Metric #16] gpu memory (used/total) : ", gpuMetric.MemoryUsed, "/", gpuMetric.MemoryTotal)
+			fmt.Println("[Metric #17] gpu power (used) : ", gpuMetric.PowerUsed)
+			fmt.Println("[Metric #18] gpu temperature : ", gpuMetric.Temperature)
+			fmt.Println("[Metric #19] gpu utilization : ", gpuMetric.Utilization)
+			fmt.Println("[Metric #20] gpu fan speed : ", gpuMetric.FanSpeed)
+		}
+		fmt.Println("----------------------------------------------")
+	}
 }
 
 func DumpScore(score *score.AnalysisScore) {

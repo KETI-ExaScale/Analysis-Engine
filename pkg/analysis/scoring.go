@@ -68,7 +68,7 @@ func (s NodeMemory) Scoring(analysisScore *score.AnalysisScore, metricCache *Met
 }
 func (s NodeStorage) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
 	for nodeName, multiMetric := range metricCache.MultiMetrics {
-		nodeScore := float32(multiMetric.NodeMetric.StorageFree) / float32(multiMetric.NodeMetric.StprageTotal) * 100
+		nodeScore := float32(multiMetric.NodeMetric.StorageFree) / float32(multiMetric.NodeMetric.StorageTotal) * 100
 		analysisScore.Scores[nodeName].NodeScore += nodeScore
 	}
 }

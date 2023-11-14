@@ -23,7 +23,7 @@ message NodeMetric {
   int64 milli_cpu_free = 2;
   int64 memory_total = 3;
   int64 memory_free = 4;
-  int64 stprage_total = 5;
+  int64 storage_total = 5;
   int64 storage_free = 6;
   int64 network_rx = 7;
   int64 network_tx = 8;

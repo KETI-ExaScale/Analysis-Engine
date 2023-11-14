@@ -6,7 +6,9 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"strings"
+	"sync"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -40,8 +42,12 @@ func InitEngine() *Engine {
 	}
 }
 
-func (e *Engine) Work() {
-	e.StartGRPCServer()
+func (e *Engine) Work(ctx context.Context, wg *sync.WaitGroup) {
+	go e.StartGRPCServer(ctx, wg)
+
+	if ANALYSIS_ENGINE_DEBUGG_LEVEL == LEVEL3 {
+		go e.StartHTTPServer(ctx, wg)
+	}
 }
 
 func (e *Engine) RunMetricAnalyzer() (*score.AnalysisScore, error) {
@@ -110,15 +116,49 @@ func (e *Engine) GetScore(context.Context, *score.Request) (*score.AnalysisScore
 	return analysisScores, nil
 }
 
-func (e *Engine) StartGRPCServer() {
+func (e *Engine) StartGRPCServer(ctx context.Context, wg *sync.WaitGroup) {
 	lis, err := net.Listen("tcp", ":9322")
 	if err != nil {
-		klog.Fatalf("failed to listen: %v", err)
+		klog.Fatalf("[error] start grpc server error: %v", err)
 	}
 	scoreServer := grpc.NewServer()
 	score.RegisterMetricGRPCServer(scoreServer, e)
 	KETI_LOG_L3("[gRPC] analysis engine server running...")
-	if err := scoreServer.Serve(lis); err != nil {
-		klog.Fatalf("failed to serve: %v", err)
+
+	go func() {
+		if err := scoreServer.Serve(lis); err != nil {
+			klog.Fatalf("failed to serve: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
+	wg.Done()
+}
+
+func (e *Engine) StartHTTPServer(ctx context.Context, wg *sync.WaitGroup) {
+	go func() {
+		KETI_LOG_L3("[http] analysis engine server running...")
+		if err := http.ListenAndServe(":9595", e); err != nil {
+			klog.Fatalf("[error] start http server error: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
+	wg.Done()
+}
+
+func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.URL.Path {
+	case "/analysis/metric":
+		metricCache, err := e.GetMetricCache()
+		if err != nil {
+			klog.Fatal("[error] get metric cache error from servehttp")
+		}
+
+		metricCache.DumpMultiMetricForTest()
+
+		w.WriteHeader(http.StatusOK)
+	default:
+		http.NotFound(w, r)
 	}
 }

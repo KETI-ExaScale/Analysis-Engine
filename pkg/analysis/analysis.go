@@ -55,7 +55,7 @@ func (e *Engine) RunMetricAnalyzer() (*score.AnalysisScore, error) {
 
 	metricCache, err := e.GetMetricCache()
 	if err != nil {
-		return nil, fmt.Errorf("get multi metric error: %s", err)
+		// return nil, fmt.Errorf("get multi metric error: %s", err)
 	}
 
 	KETI_LOG_L2("[analysis] get multi metric sucess")

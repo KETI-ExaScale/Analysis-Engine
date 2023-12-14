@@ -40,9 +40,9 @@ func (m *MetricCache) DumpMetricCache() {
 		}
 
 		KETI_LOG_L1("2. [Node Metric]")
-		KETI_LOG_L1(fmt.Sprintf("2-1. milli cpu (free/total) : %d/%d", multiMetric.NodeMetric.MilliCpuFree, multiMetric.NodeMetric.MilliCpuTotal))
-		KETI_LOG_L1(fmt.Sprintf("2-2. memory (free/total) : %d/%d", multiMetric.NodeMetric.MemoryFree, multiMetric.NodeMetric.MemoryTotal))
-		KETI_LOG_L1(fmt.Sprintf("2-3. storage (free/total) : %d/%d", multiMetric.NodeMetric.StorageFree, multiMetric.NodeMetric.StorageTotal))
+		KETI_LOG_L1(fmt.Sprintf("2-1. milli cpu (used/total) : %d/%d", multiMetric.NodeMetric.MilliCpuUsage, multiMetric.NodeMetric.MilliCpuTotal))
+		KETI_LOG_L1(fmt.Sprintf("2-2. memory (used/total) : %d/%d", multiMetric.NodeMetric.MemoryUsage, multiMetric.NodeMetric.MemoryTotal))
+		KETI_LOG_L1(fmt.Sprintf("2-3. storage (used/total) : %d/%d", multiMetric.NodeMetric.StorageUsage, multiMetric.NodeMetric.StorageTotal))
 		KETI_LOG_L1(fmt.Sprintf("2-4. network (rx/tx) : %d/%d", multiMetric.NodeMetric.NetworkRx, multiMetric.NodeMetric.NetworkTx))
 
 		KETI_LOG_L1("3. [GPU Metric]")
@@ -65,15 +65,20 @@ func (m *MetricCache) DumpMetricCache() {
 			KETI_LOG_L1(fmt.Sprintf("3-15. utilization : %d", gpuMetric.Utilization))
 			KETI_LOG_L1(fmt.Sprintf("3-16. fan speed : %d", gpuMetric.FanSpeed))
 			KETI_LOG_L1(fmt.Sprintf("3-17. pod count : %d", gpuMetric.PodCount))
+			KETI_LOG_L1(fmt.Sprintf("3-18. energy consumption : %d", gpuMetric.EnergyConsumption))
+		}
 
-			KETI_LOG_L1("4. [GPU Pod Metric]")
-			for podName, podMetric := range gpuMetric.PodMetrics {
-				KETI_LOG_L1(fmt.Sprintf("# Pod Name : %s", podName))
-				KETI_LOG_L1(fmt.Sprintf("4-1. node milli cpu (used) : %d", podMetric.NodeMilliCpuUsed))
-				KETI_LOG_L1(fmt.Sprintf("4-2. node memory (used) : %d", podMetric.NodeMemoryUsed))
-				KETI_LOG_L1(fmt.Sprintf("4-3. node storage (used) : %d", podMetric.NodeStorageUsed))
-				KETI_LOG_L1(fmt.Sprintf("4-4. node network (rx/tx) :  %d/%d", podMetric.NodeNetworkRx, podMetric.NodeNetworkTx))
-				KETI_LOG_L1(fmt.Sprintf("4-5. gpu memory :  %d", podMetric.GpuMemoryUsed))
+		KETI_LOG_L1("4. [Pod Metric]")
+		for podName, podMetric := range multiMetric.PodMetrics {
+			KETI_LOG_L1(fmt.Sprintf("# Pod Name : %s", podName))
+			KETI_LOG_L1(fmt.Sprintf("4-1. node milli cpu (used) : %d", podMetric.CpuUsage))
+			KETI_LOG_L1(fmt.Sprintf("4-2. node memory (used) : %d", podMetric.MemoryUsage))
+			KETI_LOG_L1(fmt.Sprintf("4-3. node storage (used) : %d", podMetric.StorageUsage))
+			KETI_LOG_L1(fmt.Sprintf("4-4. node network (rx/tx) :  %d/%d", podMetric.NetworkRx, podMetric.NetworkTx))
+			for _, podGPUMetric := range podMetric.PodGpuMetrics {
+				KETI_LOG_L1(fmt.Sprintf("# GPU UUID : %s", podGPUMetric.GpuUuid))
+				KETI_LOG_L1(fmt.Sprintf("4-5. gpu process id :  %s", podGPUMetric.GpuProcessId))
+				KETI_LOG_L1(fmt.Sprintf("4-6. gpu memory :  %d", podGPUMetric.GpuMemoryUsed))
 			}
 		}
 	}
@@ -85,11 +90,11 @@ func (m *MetricCache) DumpMultiMetricForTest() {
 
 	for _, multiMetric := range m.MultiMetrics {
 		fmt.Println("# Node Name : ", multiMetric.NodeName)
-		fmt.Println("[Metric #01] node milli cpu (free/total) : ", multiMetric.NodeMetric.MilliCpuFree, "/", multiMetric.NodeMetric.MilliCpuTotal)
-		fmt.Println("[Metric #02] node memory (free/total) : ", multiMetric.NodeMetric.MemoryFree, "/", multiMetric.NodeMetric.MemoryTotal)
-		fmt.Println("[Metric #03] node storage (free/total) : ", multiMetric.NodeMetric.StorageFree, "/", multiMetric.NodeMetric.StorageTotal)
-		fmt.Println("[Metric #04] node network rx : ", multiMetric.NodeMetric.NetworkRx)
-		fmt.Println("[Metric #05] node network tx : ", multiMetric.NodeMetric.NetworkTx)
+		fmt.Println("[Metric #01] node cpu used (milli core) : ", multiMetric.NodeMetric.MilliCpuUsage)
+		fmt.Println("[Metric #02] node memory used (byte) : ", multiMetric.NodeMetric.MemoryUsage)
+		fmt.Println("[Metric #03] node storage used (byte) : ", multiMetric.NodeMetric.StorageUsage)
+		fmt.Println("[Metric #04] node network rx (byte) : ", multiMetric.NodeMetric.NetworkRx)
+		fmt.Println("[Metric #05] node network tx (byte) : ", multiMetric.NodeMetric.NetworkTx)
 
 		if len(multiMetric.NvlinkInfo) != 0 {
 			fmt.Println("[Metric #06] gpu nvlink connected : true")
@@ -104,18 +109,18 @@ func (m *MetricCache) DumpMultiMetricForTest() {
 			fmt.Println("# GPU UUID : ", gpuName)
 			fmt.Println("[Metric #07] gpu name : ", gpuMetric.GpuName)
 			fmt.Println("[Metric #08] gpu architecture : ", gpuMetric.Architecture)
-			fmt.Println("[Metric #09] gpu max clock : ", gpuMetric.MaxClock)
+			fmt.Println("[Metric #09] gpu max clock (MHz) : ", gpuMetric.MaxClock)
 			fmt.Println("[Metric #10] gpu cudacore : ", gpuMetric.Cudacore)
-			fmt.Println("[Metric #11] gpu bandwidth : ", gpuMetric.Bandwidth)
+			fmt.Println("[Metric #11] gpu bandwidth (GB/s) : ", gpuMetric.Bandwidth)
 			fmt.Println("[Metric #12] gpu flops : ", gpuMetric.Flops)
-			fmt.Println("[Metric #13] gpu max operative temperature : ", gpuMetric.MaxOperativeTemp)
-			fmt.Println("[Metric #14] gpu slow down temperature : ", gpuMetric.SlowdownTemp)
-			fmt.Println("[Metric #15] gpu shut dowm temperature : ", gpuMetric.ShutdownTemp)
-			fmt.Println("[Metric #16] gpu memory (used/total) : ", gpuMetric.MemoryUsed, "/", gpuMetric.MemoryTotal)
-			fmt.Println("[Metric #17] gpu power (used) : ", gpuMetric.PowerUsed)
-			fmt.Println("[Metric #18] gpu temperature : ", gpuMetric.Temperature)
-			fmt.Println("[Metric #19] gpu utilization : ", gpuMetric.Utilization)
-			fmt.Println("[Metric #20] gpu fan speed : ", gpuMetric.FanSpeed)
+			fmt.Println("[Metric #13] gpu max operative temperature (celsius) : ", gpuMetric.MaxOperativeTemp)
+			fmt.Println("[Metric #14] gpu slow down temperature (celsius) : ", gpuMetric.SlowdownTemp)
+			fmt.Println("[Metric #15] gpu shut dowm temperature (celsius) : ", gpuMetric.ShutdownTemp)
+			fmt.Println("[Metric #16] gpu memory used (byte) : ", gpuMetric.MemoryUsed)
+			fmt.Println("[Metric #17] gpu power used (watt) : ", gpuMetric.PowerUsed)
+			fmt.Println("[Metric #18] gpu temperature (celsius): ", gpuMetric.Temperature)
+			fmt.Println("[Metric #19] gpu memory utilization (%) : ", gpuMetric.Utilization)
+			fmt.Println("[Metric #20] gpu energy consumption (kw/h) : ", gpuMetric.EnergyConsumption)
 		}
 		fmt.Println("----------------------------------------------")
 	}

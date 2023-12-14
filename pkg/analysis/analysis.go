@@ -27,7 +27,7 @@ func InitEngine() *Engine {
 	client := api.NewClientManager()
 
 	gpuMetricCollectorIPList := make([]string, 0)
-	pods, _ := client.KubeClient.CoreV1().Pods("gpu").List(context.TODO(), metav1.ListOptions{})
+	pods, _ := client.KubeClient.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 	for _, pod := range pods.Items {
 		if strings.HasPrefix(pod.Name, "keti-gpu-metric-collector") && pod.Status.Phase == "Running" {
 			internalIP := pod.Status.PodIP

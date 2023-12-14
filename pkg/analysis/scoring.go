@@ -56,19 +56,19 @@ type NodeStorage struct{}
 
 func (s NodeCPUCore) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
 	for nodeName, multiMetric := range metricCache.MultiMetrics {
-		nodeScore := float32(multiMetric.NodeMetric.MemoryFree) / float32(multiMetric.NodeMetric.MemoryTotal) * 100
+		nodeScore := (1 - (float32(multiMetric.NodeMetric.MemoryUsage) / float32(multiMetric.NodeMetric.MemoryTotal))) * 100
 		analysisScore.Scores[nodeName].NodeScore += nodeScore
 	}
 }
 func (s NodeMemory) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
 	for nodeName, multiMetric := range metricCache.MultiMetrics {
-		nodeScore := float32(multiMetric.NodeMetric.MilliCpuFree) / float32(multiMetric.NodeMetric.MilliCpuTotal) * 100
+		nodeScore := (1 - (float32(multiMetric.NodeMetric.MilliCpuUsage) / float32(multiMetric.NodeMetric.MilliCpuTotal))) * 100
 		analysisScore.Scores[nodeName].NodeScore += nodeScore
 	}
 }
 func (s NodeStorage) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
 	for nodeName, multiMetric := range metricCache.MultiMetrics {
-		nodeScore := float32(multiMetric.NodeMetric.StorageFree) / float32(multiMetric.NodeMetric.StorageTotal) * 100
+		nodeScore := (1 - (float32(multiMetric.NodeMetric.StorageUsage) / float32(multiMetric.NodeMetric.StorageTotal))) * 100
 		analysisScore.Scores[nodeName].NodeScore += nodeScore
 	}
 }

@@ -84,19 +84,53 @@ type GPUDirectStorage struct{}
 type GPUProcessTypeBalance struct{}
 
 func (s GPUFlops) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
-
+	for nodeName, multiMetric := range metricCache.MultiMetrics {
+		for gpuName, gpu_metric := range multiMetric.GpuMetrics {
+			analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore += float32(gpu_metric.Flops) / 1000
+		}
+	}
 }
 func (s GPUPodCount) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
-
+	for nodeName, multiMetric := range metricCache.MultiMetrics {
+		for gpuName, gpu_metric := range multiMetric.GpuMetrics {
+			analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore += float32(gpu_metric.GetPodCount())
+		}
+	}
 }
 func (s GPUUtilization) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
+	var total_gpu_utilization = float32(0.0)
+	for _, multiMetric := range metricCache.MultiMetrics {
+		for _, gpu_metric := range multiMetric.GpuMetrics {
+			total_gpu_utilization += float32(gpu_metric.Utilization)
+		}
+	}
 
+	for nodeName, multiMetric := range metricCache.MultiMetrics {
+		for gpuName, gpu_metric := range multiMetric.GpuMetrics {
+			analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore += total_gpu_utilization / float32(gpu_metric.Utilization)
+		}
+	}
 }
 func (s GPUMemory) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
+	var total_gpu_memory = float32(0.0)
+	for _, multiMetric := range metricCache.MultiMetrics {
+		for _, gpu_metric := range multiMetric.GpuMetrics {
+			total_gpu_memory += float32(gpu_metric.MemoryUsed)
+		}
+	}
 
+	for nodeName, multiMetric := range metricCache.MultiMetrics {
+		for gpuName, gpu_metric := range multiMetric.GpuMetrics {
+			analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore += total_gpu_memory / float32(gpu_metric.MemoryUsed)
+		}
+	}
 }
 func (s GPUTemperature) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
-
+	for nodeName, multiMetric := range metricCache.MultiMetrics {
+		for gpuName, gpu_metric := range multiMetric.GpuMetrics {
+			analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore += float32(gpu_metric.Temperature)
+		}
+	}
 }
 func (s GPUPower) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
 	var total_gpu_power = float32(0.0)
@@ -113,7 +147,11 @@ func (s GPUPower) Scoring(analysisScore *score.AnalysisScore, metricCache *Metri
 	}
 }
 func (s GPUBandwidth) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
-
+	for nodeName, multiMetric := range metricCache.MultiMetrics {
+		for gpuName, gpu_metric := range multiMetric.GpuMetrics {
+			analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore += float32(gpu_metric.Bandwidth) * 100
+		}
+	}
 }
 func (s GPUDirectStorage) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
 

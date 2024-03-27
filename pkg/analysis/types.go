@@ -40,10 +40,10 @@ func (m *MetricCache) DumpMetricCache() {
 		}
 
 		KETI_LOG_L1("2. [Node Metric]")
-		KETI_LOG_L1(fmt.Sprintf("2-1. milli cpu (used/total) : %d/%d", multiMetric.NodeMetric.MilliCpuUsage, multiMetric.NodeMetric.MilliCpuTotal))
-		KETI_LOG_L1(fmt.Sprintf("2-2. memory (used/total) : %d/%d", multiMetric.NodeMetric.MemoryUsage, multiMetric.NodeMetric.MemoryTotal))
-		KETI_LOG_L1(fmt.Sprintf("2-3. storage (used/total) : %d/%d", multiMetric.NodeMetric.StorageUsage, multiMetric.NodeMetric.StorageTotal))
-		KETI_LOG_L1(fmt.Sprintf("2-4. network (rx/tx) : %d/%d", multiMetric.NodeMetric.NetworkRx, multiMetric.NodeMetric.NetworkTx))
+		KETI_LOG_L1(fmt.Sprintf("2-1. node milli cpu (used/total) : %d/%d", multiMetric.NodeMetric.MilliCpuUsage, multiMetric.NodeMetric.MilliCpuTotal))
+		KETI_LOG_L1(fmt.Sprintf("2-2. node memory (used/total) : %d/%d", multiMetric.NodeMetric.MemoryUsage, multiMetric.NodeMetric.MemoryTotal))
+		KETI_LOG_L1(fmt.Sprintf("2-3. node storage (used/total) : %d/%d", multiMetric.NodeMetric.StorageUsage, multiMetric.NodeMetric.StorageTotal))
+		KETI_LOG_L1(fmt.Sprintf("2-4. node network (rx/tx) : %d/%d", multiMetric.NodeMetric.NetworkRx, multiMetric.NodeMetric.NetworkTx))
 
 		KETI_LOG_L1("3. [GPU Metric]")
 		for gpuName, gpuMetric := range multiMetric.GpuMetrics {
@@ -71,10 +71,10 @@ func (m *MetricCache) DumpMetricCache() {
 		KETI_LOG_L1("4. [Pod Metric]")
 		for podName, podMetric := range multiMetric.PodMetrics {
 			KETI_LOG_L1(fmt.Sprintf("# Pod Name : %s", podName))
-			KETI_LOG_L1(fmt.Sprintf("4-1. node milli cpu (used) : %d", podMetric.CpuUsage))
-			KETI_LOG_L1(fmt.Sprintf("4-2. node memory (used) : %d", podMetric.MemoryUsage))
-			KETI_LOG_L1(fmt.Sprintf("4-3. node storage (used) : %d", podMetric.StorageUsage))
-			KETI_LOG_L1(fmt.Sprintf("4-4. node network (rx/tx) :  %d/%d", podMetric.NetworkRx, podMetric.NetworkTx))
+			KETI_LOG_L1(fmt.Sprintf("4-1. pod milli cpu (used) : %d", podMetric.CpuUsage))
+			KETI_LOG_L1(fmt.Sprintf("4-2. pod memory (used) : %d", podMetric.MemoryUsage))
+			KETI_LOG_L1(fmt.Sprintf("4-3. pod storage (used) : %d", podMetric.StorageUsage))
+			KETI_LOG_L1(fmt.Sprintf("4-4. pod network (rx/tx) :  %d/%d", podMetric.NetworkRx, podMetric.NetworkTx))
 			for _, podGPUMetric := range podMetric.PodGpuMetrics {
 				KETI_LOG_L1(fmt.Sprintf("# GPU UUID : %s", podGPUMetric.GpuUuid))
 				KETI_LOG_L1(fmt.Sprintf("4-5. gpu process id :  %s", podGPUMetric.GpuProcessId))
@@ -130,10 +130,10 @@ func DumpScore(score *score.AnalysisScore) {
 	KETI_LOG_L1("\n---:: Dump Analysis Score All ::---")
 
 	for nodeName, nodeScore := range score.Scores {
-		KETI_LOG_L1(fmt.Sprintf("1. Node [%s] Score: %f", nodeName, nodeScore.NodeScore))
+		KETI_LOG_L1(fmt.Sprintf("# node {%s} score: %f", nodeName, nodeScore.NodeScore))
 
 		for gpuName, gpuScore := range nodeScore.GpuScores {
-			KETI_LOG_L1(fmt.Sprintf("2. GPU [%s] Score: %f", gpuName, gpuScore.GpuScore))
+			KETI_LOG_L1(fmt.Sprintf("- gpu {%s} score: %f", gpuName, gpuScore.GpuScore))
 		}
 	}
 	KETI_LOG_L1("-----------------------------------\n")

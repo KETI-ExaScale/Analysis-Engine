@@ -10,7 +10,7 @@ dir=$( pwd )
 
 image_name="keti-analysis-engine"
 registry="ketidevit2"
-version="v1.0"
+version="v2.0"
 
 #binady file
 go build -o $dir/../build/_output/bin/$image_name -mod=vendor $dir/../cmd/main.go

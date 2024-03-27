@@ -4,6 +4,7 @@ import (
 	"analysis-engine/pkg/api"
 	"analysis-engine/pkg/api/score"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"google.golang.org/grpc"
+
 	"k8s.io/klog/v2"
 )
 
@@ -58,7 +60,7 @@ func (e *Engine) RunMetricAnalyzer() (*score.AnalysisScore, error) {
 		// return nil, fmt.Errorf("get multi metric error: %s", err)
 	}
 
-	KETI_LOG_L2("[analysis] get multi metric sucess")
+	KETI_LOG_L2("[analysis] get multi metric success")
 
 	metricCache.DumpMetricCache() //테스트용
 
@@ -93,13 +95,13 @@ func (e *Engine) GetMetricCache() (*MetricCache, error) {
 	metricCache := NewMetricCache()
 
 	for _, ip := range e.GPUMetricCollectorIPList {
-		multiMetric_, err := api.GetMultiMetric(ip)
+		multiMetric, err := api.GetMultiMetric(ip)
 		if err != nil {
 			return nil, fmt.Errorf("metric collector gRPC error: %s", err)
 		}
 
-		nodeName := multiMetric_.NodeName
-		metricCache.MultiMetrics[nodeName] = multiMetric_
+		nodeName := multiMetric.NodeName
+		metricCache.MultiMetrics[nodeName] = multiMetric
 	}
 
 	return metricCache, nil
@@ -158,6 +160,22 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		metricCache.DumpMultiMetricForTest()
 
 		w.WriteHeader(http.StatusOK)
+	case "/analysis/web/metric":
+		metricCache, err := e.GetMetricCache()
+		if err != nil {
+			klog.Fatal("[error] get metric cache error from servehttp")
+		}
+
+		jsonMessage, err := json.Marshal(metricCache)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(jsonMessage)
+
 	default:
 		http.NotFound(w, r)
 	}

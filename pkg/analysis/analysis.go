@@ -73,9 +73,10 @@ func (e *Engine) RunMetricAnalyzer() (*score.AnalysisScore, error) {
 			NodeScore: 0.0,
 			GpuScores: make(map[string]*score.GPUScore),
 		}
-		for gpuUUID := range multiMetric.GpuMetrics {
+		for gpuUUID, gpuMetric := range multiMetric.GpuMetrics {
 			nodeScore.GpuScores[gpuUUID] = &score.GPUScore{
 				GpuScore: 0.0,
+				PodCount: int32(gpuMetric.PodCount),
 			}
 		}
 		analysisScores.Scores[nodeName] = nodeScore

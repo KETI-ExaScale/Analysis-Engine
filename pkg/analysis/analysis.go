@@ -87,7 +87,7 @@ func (e *Engine) RunMetricAnalyzer() (*score.AnalysisScore, error) {
 
 	KETI_LOG_L2("[analysis] finish scoring")
 
-	DumpScore(analysisScores) //DEBUGG LEVEL = 1 일때 출력
+	// DumpScore(analysisScores) //DEBUGG LEVEL = 1 일때 출력
 
 	return analysisScores, nil
 }

@@ -58,27 +58,27 @@ type NodeMemory struct{}
 type NodeStorage struct{}
 
 func (s NodeCPUCore) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
-	KETI_LOG_L1("[stage] S#1-1. NodeGPUCore")
+	KETI_LOG_L2("[stage] S#1-1. NodeGPUCore")
 	for nodeName, multiMetric := range metricCache.MultiMetrics {
 		nodeScore := (1 - (float32(multiMetric.NodeMetric.MemoryUsage) / float32(multiMetric.NodeMetric.MemoryTotal))) * 100
 		analysisScore.Scores[nodeName].NodeScore += nodeScore
-		KETI_LOG_L1(fmt.Sprintf("[debugg] node {%s} score: %f", nodeName, analysisScore.Scores[nodeName].NodeScore))
+		KETI_LOG_L2(fmt.Sprintf("[debugg] node {%s} score: %f", nodeName, analysisScore.Scores[nodeName].NodeScore))
 	}
 }
 func (s NodeMemory) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
-	KETI_LOG_L1("[stage] S#1-2. NodeMemory")
+	KETI_LOG_L2("[stage] S#1-2. NodeMemory")
 	for nodeName, multiMetric := range metricCache.MultiMetrics {
 		nodeScore := (1 - (float32(multiMetric.NodeMetric.MilliCpuUsage) / float32(multiMetric.NodeMetric.MilliCpuTotal))) * 100
 		analysisScore.Scores[nodeName].NodeScore += nodeScore
-		KETI_LOG_L1(fmt.Sprintf("[debugg] node {%s} score: %f", nodeName, analysisScore.Scores[nodeName].NodeScore))
+		KETI_LOG_L2(fmt.Sprintf("[debugg] node {%s} score: %f", nodeName, analysisScore.Scores[nodeName].NodeScore))
 	}
 }
 func (s NodeStorage) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
-	KETI_LOG_L1("[stage] S#1-3. NodeStorage")
+	KETI_LOG_L2("[stage] S#1-3. NodeStorage")
 	for nodeName, multiMetric := range metricCache.MultiMetrics {
 		nodeScore := (1 - (float32(multiMetric.NodeMetric.StorageUsage) / float32(multiMetric.NodeMetric.StorageTotal))) * 100
 		analysisScore.Scores[nodeName].NodeScore += nodeScore
-		KETI_LOG_L1(fmt.Sprintf("[debugg] node {%s} score: %f", nodeName, analysisScore.Scores[nodeName].NodeScore))
+		KETI_LOG_L2(fmt.Sprintf("[debugg] node {%s} score: %f", nodeName, analysisScore.Scores[nodeName].NodeScore))
 	}
 }
 
@@ -93,25 +93,25 @@ type GPUDirectStorage struct{}
 type GPUProcessTypeBalance struct{}
 
 func (s GPUFlops) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
-	KETI_LOG_L1("[stage] S#2-1. GPUFlops")
+	KETI_LOG_L2("[stage] S#2-1. GPUFlops")
 	for nodeName, multiMetric := range metricCache.MultiMetrics {
 		for gpuName, gpu_metric := range multiMetric.GpuMetrics {
 			analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore += float32(gpu_metric.Flops) / 1000
-			KETI_LOG_L1(fmt.Sprintf("[debugg] gpu {%s} score: %f", gpuName, analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore))
+			KETI_LOG_L2(fmt.Sprintf("[debugg] gpu {%s} score: %f", gpuName, analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore))
 		}
 	}
 }
 func (s GPUPodCount) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
-	KETI_LOG_L1("[stage] S#2-2. GPUPodCount")
+	KETI_LOG_L2("[stage] S#2-2. GPUPodCount")
 	for nodeName, multiMetric := range metricCache.MultiMetrics {
 		for gpuName, gpu_metric := range multiMetric.GpuMetrics {
 			analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore += float32(gpu_metric.GetPodCount())
-			KETI_LOG_L1(fmt.Sprintf("[debugg] gpu {%s} score: %f", gpuName, analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore))
+			KETI_LOG_L2(fmt.Sprintf("[debugg] gpu {%s} score: %f", gpuName, analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore))
 		}
 	}
 }
 func (s GPUUtilization) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
-	KETI_LOG_L1("[stage] S#2-3. GPUUtilization")
+	KETI_LOG_L2("[stage] S#2-3. GPUUtilization")
 
 	for nodeName, multiMetric := range metricCache.MultiMetrics {
 		for gpuName, gpu_metric := range multiMetric.GpuMetrics {
@@ -121,12 +121,12 @@ func (s GPUUtilization) Scoring(analysisScore *score.AnalysisScore, metricCache 
 				var score = float32(gpu_metric.Utilization) / 100 * 10
 				analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore += score
 			}
-			KETI_LOG_L1(fmt.Sprintf("[debugg] gpu {%s} score: %f", gpuName, analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore))
+			KETI_LOG_L2(fmt.Sprintf("[debugg] gpu {%s} score: %f", gpuName, analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore))
 		}
 	}
 }
 func (s GPUMemory) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
-	KETI_LOG_L1("[stage] S#2-4. GPUMemory")
+	KETI_LOG_L2("[stage] S#2-4. GPUMemory")
 	var total_gpu_memory = float32(0.0)
 	for _, multiMetric := range metricCache.MultiMetrics {
 		for _, gpu_metric := range multiMetric.GpuMetrics {
@@ -137,21 +137,21 @@ func (s GPUMemory) Scoring(analysisScore *score.AnalysisScore, metricCache *Metr
 	for nodeName, multiMetric := range metricCache.MultiMetrics {
 		for gpuName, gpu_metric := range multiMetric.GpuMetrics {
 			analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore += total_gpu_memory / float32(gpu_metric.MemoryUsed)
-			KETI_LOG_L1(fmt.Sprintf("[debugg] gpu {%s} score: %f", gpuName, analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore))
+			KETI_LOG_L2(fmt.Sprintf("[debugg] gpu {%s} score: %f", gpuName, analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore))
 		}
 	}
 }
 func (s GPUTemperature) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
-	KETI_LOG_L1("[stage] S#2-5. GPUTemperature")
+	KETI_LOG_L2("[stage] S#2-5. GPUTemperature")
 	for nodeName, multiMetric := range metricCache.MultiMetrics {
 		for gpuName, gpu_metric := range multiMetric.GpuMetrics {
 			analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore += float32(gpu_metric.Temperature)
-			KETI_LOG_L1(fmt.Sprintf("[debugg] gpu {%s} score: %f", gpuName, analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore))
+			KETI_LOG_L2(fmt.Sprintf("[debugg] gpu {%s} score: %f", gpuName, analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore))
 		}
 	}
 }
 func (s GPUPower) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
-	KETI_LOG_L1("[stage] S#2-6. GPUPower")
+	KETI_LOG_L2("[stage] S#2-6. GPUPower")
 	var total_gpu_power = float32(0.0)
 	for _, multiMetric := range metricCache.MultiMetrics {
 		for _, gpu_metric := range multiMetric.GpuMetrics {
@@ -162,16 +162,16 @@ func (s GPUPower) Scoring(analysisScore *score.AnalysisScore, metricCache *Metri
 	for nodeName, multiMetric := range metricCache.MultiMetrics {
 		for gpuName, gpu_metric := range multiMetric.GpuMetrics {
 			analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore += total_gpu_power / float32(gpu_metric.PowerUsed)
-			KETI_LOG_L1(fmt.Sprintf("[debugg] gpu {%s} score: %f", gpuName, analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore))
+			KETI_LOG_L2(fmt.Sprintf("[debugg] gpu {%s} score: %f", gpuName, analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore))
 		}
 	}
 }
 func (s GPUBandwidth) Scoring(analysisScore *score.AnalysisScore, metricCache *MetricCache) {
-	KETI_LOG_L1("[stage] S#2-7. GPUBandwidth")
+	KETI_LOG_L2("[stage] S#2-7. GPUBandwidth")
 	for nodeName, multiMetric := range metricCache.MultiMetrics {
 		for gpuName, gpu_metric := range multiMetric.GpuMetrics {
 			analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore += float32(gpu_metric.Bandwidth) * 100
-			KETI_LOG_L1(fmt.Sprintf("[debugg] gpu {%s} score: %f", gpuName, analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore))
+			KETI_LOG_L2(fmt.Sprintf("[debugg] gpu {%s} score: %f", gpuName, analysisScore.Scores[nodeName].GpuScores[gpuName].GpuScore))
 		}
 	}
 }

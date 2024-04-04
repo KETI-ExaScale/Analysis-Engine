@@ -27,4 +27,4 @@ spec:
             fieldRef:
               fieldPath: spec.nodeName
         - name: DEBUGG_LEVEL
-          value: "LEVEL1"
+          value: "LEVEL2"

@@ -57,12 +57,12 @@ func (e *Engine) RunMetricAnalyzer() (*score.AnalysisScore, error) {
 
 	metricCache, err := e.GetMetricCache()
 	if err != nil {
-		// return nil, fmt.Errorf("get multi metric error: %s", err)
+		return nil, fmt.Errorf("get multi metric error: %s", err)
 	}
 
 	KETI_LOG_L2("[analysis] get multi metric success")
 
-	metricCache.DumpMetricCache() //테스트용
+	metricCache.DumpMetricCache() //DEBUGG LEVEL = 1 일때 출력
 
 	analysisScores := &score.AnalysisScore{
 		Scores: make(map[string]*score.NodeScore),
@@ -87,7 +87,7 @@ func (e *Engine) RunMetricAnalyzer() (*score.AnalysisScore, error) {
 
 	KETI_LOG_L2("[analysis] finish scoring")
 
-	// DumpScore(analysisScores) //DEBUGG LEVEL = 1 일때 출력
+	DumpScore(analysisScores) //DEBUGG LEVEL = 1 일때 출력
 
 	return analysisScores, nil
 }

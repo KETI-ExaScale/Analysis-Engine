@@ -46,10 +46,8 @@ func InitEngine() *Engine {
 
 func (e *Engine) Work(ctx context.Context, wg *sync.WaitGroup) {
 	go e.StartGRPCServer(ctx, wg)
+	go e.StartHTTPServer(ctx, wg)
 
-	if ANALYSIS_ENGINE_DEBUGG_LEVEL == LEVEL3 {
-		go e.StartHTTPServer(ctx, wg)
-	}
 }
 
 func (e *Engine) RunMetricAnalyzer() (*score.AnalysisScore, error) {
